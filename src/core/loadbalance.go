@@ -1,15 +1,16 @@
 package core
 
 import (
-	"fmt"
 	"log"
 	"net/url"
-
+	"sync"
 	"github.com/JrSchmidtt/loadbalance-api/src/config"
 )
 
 type LoadBalancer struct {
 	Services []config.Service
+	mu 	 sync.Mutex
+	next int
 }
 
 func NewLoadBalancer() (*LoadBalancer, error) {
@@ -19,20 +20,22 @@ func NewLoadBalancer() (*LoadBalancer, error) {
 	}, nil
 }
 
-func (lb *LoadBalancer) ChooseService() *url.URL {
-	if len(lb.Services) > 0 {
-		for _, service := range lb.Services {
-			for _, trafficWeight := range service.TrafficWeights {
-				fmt.Printf("Percentage: %d\n", trafficWeight.Percentage)
+func (lb *LoadBalancer) ChooseService() (*url.URL) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+
+	service := lb.Services[lb.next]
+	lb.next = (lb.next + 1) % len(lb.Services)
+
+	for _, wight := range service.TrafficWeights {
+		if wight.Percentage > 0 {
+			serviceURL, err := url.Parse(lb.Services[0].URL)
+			if err != nil {
+				log.Printf("Error parsing URL: %s\n", err)
+				return nil
 			}
-			fmt.Printf("Service: %s\n", service.Name)
+			return serviceURL
 		}
-		serviceURL, err := url.Parse(lb.Services[0].URL)
-		if err != nil {
-			log.Printf("Erro ao fazer o parse da URL do serviço: %v", err)
-			return nil
-		}
-		return serviceURL
 	}
 	return nil
 }
