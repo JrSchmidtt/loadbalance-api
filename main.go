@@ -19,7 +19,6 @@ func main() {
 			fmt.Println("Error choosing service")
 			return
 		}
-		fmt.Printf("Chosen Service: %s\n", serviceURL)
 		reverseProxy := httputil.NewSingleHostReverseProxy(serviceURL)
 		reverseProxy.ServeHTTP(w, r)
 	})
