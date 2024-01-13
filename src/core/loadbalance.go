@@ -13,6 +13,7 @@ type LoadBalancer struct {
 	Services []config.Service
 	mu 	 sync.Mutex
 	next int
+	currentWeight int
 }
 
 func NewLoadBalancer() (*LoadBalancer, error) {
@@ -42,12 +43,11 @@ func (lb *LoadBalancer) ChooseService() *url.URL {
 		}
 	}
 	randNumber := rand.Intn(totalWeight)
-	currentWeight := 0
 	for i := 0; i < len(lb.Services); i++ {
 		service := lb.Services[(lb.next+i) % len(lb.Services)] // calculate next index
 		for _, weight := range service.TrafficWeights {
-			currentWeight += weight.Percentage
-			if randNumber < currentWeight {
+			lb.currentWeight += weight.Percentage
+			if randNumber < lb.currentWeight {
 				lb.next = (lb.next + i + 1) % len(lb.Services)
 				serviceURL, err := url.Parse(service.URL)
 				if err != nil {
