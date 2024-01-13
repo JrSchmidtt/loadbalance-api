@@ -16,6 +16,10 @@ func main() {
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serviceURL := loadBalancer.ChooseService()
+		if serviceURL == nil {
+			fmt.Println("Error choosing service")
+			return
+		}
 		fmt.Printf("Chosen Service: %s\n", serviceURL)
 		reverseProxy := httputil.NewSingleHostReverseProxy(serviceURL)
 		reverseProxy.ServeHTTP(w, r)
