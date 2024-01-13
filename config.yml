@@ -1,0 +1,18 @@
+services:
+  - name: service-a
+    url: http://localhost:8081
+    path: /api
+    traffic_weight: 
+      - percentage: 20
+
+  - name: service-b
+    url: http://localhost:8082
+    path: /api
+    traffic_weight: 
+      - percentage: 30
+
+  - name: service-c
+    url: http://localhost:8083
+    path: /api
+    traffic_weight: 
+      - percentage: 50
