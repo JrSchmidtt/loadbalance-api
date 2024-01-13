@@ -1,8 +1,9 @@
 package core
 
 import (
-	"math/rand"
 	"fmt"
+	"math/rand"
+	"net/http"
 	"net/url"
 	"sync"
 	"github.com/JrSchmidtt/loadbalance-api/src/config"
@@ -16,6 +17,16 @@ type LoadBalancer struct {
 
 func NewLoadBalancer() (*LoadBalancer, error) {
 	config := config.ReadConfig("config.yml")
+	for i := range config.Services {
+		err := pingService(config.Services[i].URL)
+		if err != nil {
+			fmt.Printf("service %s is not available\n", config.Services[i].Name)
+			config.Services = append(config.Services[:i], config.Services[i+1:]...)
+		}
+	}
+	if len(config.Services) == 0 {
+		return nil, fmt.Errorf("no services available")
+	}
 	return &LoadBalancer{
 		Services: config.Services,
 	}, nil
@@ -72,4 +83,12 @@ func (lb *LoadBalancer) UpdateService(service config.Service) {
 			lb.Services[i] = service
 		}
 	}
+}
+
+func pingService(serviceURL string) error {
+	_, err := http.Get(serviceURL)
+	if err != nil {
+		return err
+	}
+	return nil
 }
