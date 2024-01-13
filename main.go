@@ -11,8 +11,7 @@ import (
 func main() {
 	loadBalancer, err := core.NewLoadBalancer()
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serviceURL := loadBalancer.ChooseService()
