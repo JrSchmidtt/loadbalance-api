@@ -1,7 +1,8 @@
 package core
 
 import (
-	"log"
+	"math/rand"
+	"fmt"
 	"net/url"
 	"sync"
 	"github.com/JrSchmidtt/loadbalance-api/src/config"
@@ -20,21 +21,30 @@ func NewLoadBalancer() (*LoadBalancer, error) {
 	}, nil
 }
 
-func (lb *LoadBalancer) ChooseService() (*url.URL) {
+func (lb *LoadBalancer) ChooseService() *url.URL {
 	lb.mu.Lock()
 	defer lb.mu.Unlock()
-
-	service := lb.Services[lb.next]
-	lb.next = (lb.next + 1) % len(lb.Services)
-
-	for _, wight := range service.TrafficWeights {
-		if wight.Percentage > 0 {
-			serviceURL, err := url.Parse(lb.Services[0].URL)
-			if err != nil {
-				log.Printf("Error parsing URL: %s\n", err)
-				return nil
+	totalWeight := 0
+	for _, service := range lb.Services {
+		for _, weight := range service.TrafficWeights {
+			totalWeight += weight.Percentage
+		}
+	}
+	randNumber := rand.Intn(totalWeight)
+	currentWeight := 0
+	for i := 0; i < len(lb.Services); i++ {
+		service := lb.Services[(lb.next+i) % len(lb.Services)] // calculate next index
+		for _, weight := range service.TrafficWeights {
+			currentWeight += weight.Percentage
+			if randNumber < currentWeight {
+				lb.next = (lb.next + i + 1) % len(lb.Services)
+				serviceURL, err := url.Parse(service.URL)
+				if err != nil {
+					fmt.Printf("Error parsing service URL: %s\n", err)
+					return nil
+				}
+				return serviceURL
 			}
-			return serviceURL
 		}
 	}
 	return nil
